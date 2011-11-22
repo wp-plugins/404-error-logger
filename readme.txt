@@ -19,5 +19,5 @@ If you come across any bugs or have suggestions, please contact me at [rayofsola
 
 1. Upload the plugin folder to the `/wp-content/plugins/` directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
-3. The plugin settings can be accessed via the 'Tools' menu in the administration area, under '404 Error Log'
+3. The plugin settings can be accessed via the 'Tools' menu in the administration area, under '404 Error Logger'
  
