@@ -51,7 +51,7 @@ class Log_404 {
 			date DATETIME NOT NULL,
 			url VARCHAR(512) NOT NULL,
 			ref VARCHAR(512) NOT NULL default '', 
-			ip VARCHAR(512) NOT NULL default '',
+			ip VARCHAR(40) NOT NULL default '',
 			ua VARCHAR(512) NOT NULL default '',
 			PRIMARY KEY  (id)
 		);";
@@ -175,7 +175,7 @@ class Log_404 {
 		
 		$data = array( 
 			'date' => current_time('mysql'),
-			'url' => ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']
+			'url' => $_SERVER['REQUEST_URI']
 		);
 		
 		if( in_array( 'ip', $this->options['also_record'] ) )
