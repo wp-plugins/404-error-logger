@@ -3,7 +3,7 @@
 Plugin Name: 404 Error Logger
 Plugin URI: http://rayofsolaris.net/code/404-error-logger-for-wordpress
 Description: A simple plugin to log 404 (Page Not Found) errors on your site.
-Version: 0.1
+Version: 0.1.1
 Author: Samir Shah
 Author URI: http://rayofsolaris.net/
 License: GPL2
@@ -194,11 +194,9 @@ class Log_404 {
 		
 		// pop old entry if we exceeded the limit
 		$max = $this->options['max_entries'];
-		$extras = array_keys( $wpdb->get_results( "SELECT ID FROM $this->table LIMIT $max,500", OBJECT_K ) );
-		if( $extras ) {
-			$extras = implode( ',', $extras );
-			$wpdb->query( "DELETE FROM $this->table WHERE id IN($extras)" );
-		}
+		$cutoff = $wpdb->get_var( "SELECT id FROM $this->table ORDER BY id DESC LIMIT $max,1" );
+		if( $cutoff )
+			$wpdb->query( "DELETE FROM $this->table WHERE id <= $cutoff" );
 	}
 }
 

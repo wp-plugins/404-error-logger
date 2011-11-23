@@ -15,6 +15,11 @@ It requires PHP version 5 or greater.
 
 If you come across any bugs or have suggestions, please contact me at [rayofsolaris.net](http://rayofsolaris.net).
 
+== Changelog ==
+
+= 0.1.1 =
+* Bugfix: old entries were not properly deleted
+
 == Installation ==
 
 1. Upload the plugin folder to the `/wp-content/plugins/` directory
