@@ -1,6 +1,6 @@
 === 404 Error Logger ===
 Contributors: solarissmoke
-Tags: 404, error, log
+Tags: error, log, 404
 Requires at least: 3.1
 Tested up to: 3.3
 Stable tag: trunk
