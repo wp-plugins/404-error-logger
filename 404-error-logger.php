@@ -3,7 +3,7 @@
 Plugin Name: 404 Error Logger
 Plugin URI: http://rayofsolaris.net/code/404-error-logger-for-wordpress
 Description: A simple plugin to log 404 (Page Not Found) errors on your site.
-Version: 0.1.1
+Version: 0.1.2
 Author: Samir Shah
 Author URI: http://rayofsolaris.net/
 License: GPL2
@@ -66,7 +66,7 @@ class Log_404 {
 	
 	function load_table(){
 		// need to load the list table early for WP to catch it
-		if( get_current_screen()->id == 'tools_page_404_error_log' ) {
+		if( get_current_screen()->id == 'tools_page_404_error_log' && empty( $_GET['view'] ) ) {
 			require_once( dirname( __FILE__ ) . '/includes/class-log-404-list-table.php' );
 			$this->list_table = new Log_404_List_Table( $this->options['also_record'] );
 		}
@@ -80,10 +80,11 @@ class Log_404 {
 		#the-list td {vertical-align: middle}
 		#the-list .column-date {font-size: 0.9em}
 		.wp-list-table .column-ip {width: 15%}
+		#the-list .column-ua, #the-list .column-ref {color: #777; font-size: 0.9em}
 		</style>
 		<?php screen_icon(); ?>
 		<div class="wrap">
-		<h2>404 Error Log</h2>
+		<h2>404 Error Log <?php if ( !empty( $_POST['s'] ) ) echo '<span class="subtitle">Search results for &#8220;' . esc_attr( $_POST['s'] ) . '&#8221;</span>'; ?></h2>
 		<?php
 		if( ! get_option( 'permalink_structure' ) ) {
 			echo '<div class="error"><p><strong>You do not currently have pretty permalinks enabled on your site. This means that WordPress does not handle requests for pages that are not found on your site (your web server handles them directly), and so this plugin cannot log them. You need to be using pretty permalinks in order for this plugin to work.</strong></div>';
@@ -112,12 +113,12 @@ class Log_404 {
 	</form>
 	<script>
 	jQuery(document).ready(function($){
-		$("#doaction").click( function(e){
-			if( $("select[name='action']").val() == "-1" ) {
+		$("#doaction, #doaction2").click( function(e){
+			if( $(this).parent().find("select").val() == "-1" ) {
 				e.preventDefault();
 				alert("You did not select an action to perform!");
 			}
-			else if( ! $("#the-list :checked").length ) {
+			else if( !$("#the-list :checked").length ) {
 				e.preventDefault();
 				alert("You did not select any items to delete!");
 			}

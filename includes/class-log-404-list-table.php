@@ -10,14 +10,7 @@ class Log_404_List_Table extends WP_List_Table {
 		$this->log_404_table = $GLOBALS['wpdb']->prefix . '404_log';
 		$this->extra_columns = $extra_columns;
 		parent::__construct();
-		
-		// don't want to show screen options
-		add_filter( 'screen_options_show_screen', array( $this, 'hide_screen_options' ), 10, 2 );
     }
-	
-	function hide_screen_options( $show_screen, $scr ) {
-		return ( $scr->id == 'plugins_page_log_404' ) ? false : $show_screen;
-	}
 
     function get_columns(){
         $cols = array(
