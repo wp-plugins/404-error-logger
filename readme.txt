@@ -11,6 +11,8 @@ Logs 404 (Page Not Found) errors on your WordPress site.
 
 Logs 404 (Page Not Found) errors on your WordPress site. This can be useful for tracking down broken links or missing content. You can optionally record additional information such as IP addresses, user agents and referrers.
 
+**IMPORTANT: This plugin will not work if you use a caching/performance plugin that caches 404 responses. Please check that this isn't the case before reporting a bug.**
+
 If you come across any bugs or have suggestions, please contact me at [rayofsolaris.net](http://rayofsolaris.net).
 
 == Changelog ==
