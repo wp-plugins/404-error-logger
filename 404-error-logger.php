@@ -91,6 +91,10 @@ class Log_404 {
 			echo '</div>';
 			return;
 		}
+		if( WP_CACHE ) {
+			echo '<div class="error"><p><strong>It seems that a caching/performance plugin is active on this site. Please note that with most caching plugins, WordPress does not handle requests for pages that are not found on your site (your web server handles them directly), and so this plugin cannot log them.</strong></div>';
+			echo '</div>';
+		}
 		if( isset( $_GET['view'] ) && $_GET['view'] == 'options' )
 			$this->manage_options();
 		else
