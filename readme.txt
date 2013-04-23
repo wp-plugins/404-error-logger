@@ -15,7 +15,21 @@ Logs 404 (Page Not Found) errors on your WordPress site. This can be useful for 
 
 If you come across any bugs or have suggestions, please use the plugin support forums or contact me at [rayofsolaris.net](http://rayofsolaris.net). I can't fix it if I don't know it's broken!
 
+== Frequently Asked Questions ==
+
+= Will this plugin work if a caching/performance plugin is active ? =
+
+The plugin has been tested with the following caching plugins, and should work even if they are active:
+
+- W3 Total Cache
+- WP Super Cache
+
+I have not tested it with other caching plugins, and there is a high chance that it **will not work** with many of them. Most of them will cache the response so that it cannot be logged.
+
 == Changelog ==
+
+= 0.1.3 =
+* Add support for popular caching plugins.
 
 = 0.1.2 =
 * Fix Javascript in log viewer

@@ -3,7 +3,7 @@
 Plugin Name: 404 Error Logger
 Plugin URI: http://rayofsolaris.net/code/404-error-logger-for-wordpress
 Description: A simple plugin to log 404 (Page Not Found) errors on your site.
-Version: 0.1.2
+Version: 0.1.3
 Author: Samir Shah
 Author URI: http://rayofsolaris.net/
 License: GPL2
@@ -91,9 +91,16 @@ class Log_404 {
 			echo '</div>'; //wrap
 			return;
 		}
-		if( WP_CACHE ) {
-			echo '<div class="error"><p><strong>It seems that a caching/performance plugin is active on this site. Please note that with most caching plugins, WordPress does not handle requests for pages that are not found on your site (your web server handles them directly), and so this plugin cannot log them.</strong></div>';
-		}
+		if( WP_CACHE ) :?>
+		<div class="updated">
+		<p><strong style="color: #900">Warning:</strong> It seems that a caching/performance plugin is active on this site. This plugin has only been tested with the following caching plugins:</p>
+		<ul style="list-style: disc; margin-left: 2em">
+		<li>W3 Total Cache</li>
+		<li> WP Super Cache</li>
+		</ul>
+		<p><strong>Other caching plugins may cache responses to requests for pages that don't exist</strong>, in which case this plugin will not be able to intercept the requests and log them.</p>
+		</div>
+		<?php endif;
 		if( isset( $_GET['view'] ) && $_GET['view'] == 'options' )
 			$this->manage_options();
 		else
@@ -177,6 +184,8 @@ class Log_404 {
 			return;
 		
 		global $wpdb;
+		
+		define( 'DONOTCACHEPAGE', true );		// WP Super Cache and W3 Total Cache recognise this
 		
 		$data = array( 
 			'date' => current_time('mysql'),
