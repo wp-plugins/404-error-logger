@@ -3,7 +3,7 @@
 Plugin Name: 404 Error Logger
 Plugin URI: http://rayofsolaris.net/code/404-error-logger-for-wordpress
 Description: A simple plugin to log 404 (Page Not Found) errors on your site.
-Version: 0.1.3
+Version: 0.2
 Author: Samir Shah
 Author URI: http://rayofsolaris.net/
 License: GPL2
@@ -13,7 +13,7 @@ if( ! defined( 'ABSPATH' ) )
 	exit;
 
 class Log_404 {
-	const db_version = 1;
+	const db_version = 2;
 	const opt = '404_error_logger_options';
 	private $options;
 	private $table;
@@ -27,7 +27,12 @@ class Log_404 {
 		if( !isset( $this->options['db_version'] ) || $this->options['db_version'] < self::db_version ) {
 			// upgrade placeholder
 			$this->install_table();
-			$defaults = array( 'max_entries' => 500, 'also_record' => array( 'ip', 'ua', 'ref' ) );
+			$defaults = array( 
+				'max_entries' => 500, 
+				'also_record' => array( 'ip', 'ua', 'ref' ),
+				'ignore_bots' => false,
+				'only_w_ref' => false
+			);
 			foreach( $defaults as $k => $v )
 				if( !isset( $this->options[$k] ) )
 					$this->options[$k] = $v;
@@ -146,6 +151,8 @@ class Log_404 {
 		if( isset( $_POST['submit'] ) ) {
 			$this->options['also_record'] = empty( $_POST['also_record'] ) ? array() : (array) $_POST['also_record'];
 			$this->options['max_entries'] = abs( intval( $_POST['max_entries'] ) );
+			$this->options['ignore_bots'] = isset( $_POST['ignore_bots'] );
+			$this->options['only_w_ref'] = isset( $_POST['only_w_ref'] );
 			update_option( self::opt, $this->options );
 			echo '<div id="message" class="updated fade"><p>Options updated.</p></div>';
 		}
@@ -154,17 +161,26 @@ class Log_404 {
 	<form action="" method="post" id="log-404-settings">
 	<input type="hidden" name="page" value="404_error_log" />
 	<table class="form-table"><tbody>
-	<tr><th scope="row"><label for="max_entries">Maximum log entries to keep</label></th><td>
-	<input type="number" name="max_entries" id="max_entries" value="<?php echo $this->options['max_entries'];?>" maxlength="4" size="4" />
-	</td></tr>
-	<tr><th scope="row">Additional data to record</th><td>
-	<?php
-	foreach( array( 'ref' => 'HTTP Referer', 'ip' => 'Client IP Address', 'ua' => 'Client User Agent' ) as $k => $v ) {
-		$checked = checked( in_array( $k, $this->options['also_record'] ), true, false );
-		echo "<label for='also_record_$k'><input type='checkbox' name='also_record[]' id='also_record_$k' value='$k' $checked /> $v</label><br>";
-	}
-	?>
-	</td></tr>
+		<tr>
+			<th scope="row"><label for="max_entries">Maximum log entries to keep</label></th>
+			<td><input type="number" name="max_entries" id="max_entries" value="<?php echo $this->options['max_entries'];?>" maxlength="4" size="4" /></td>
+		</tr>
+		<tr>
+			<th scope="row">Additional data to record</th>
+			<td><?php
+				foreach( array( 'ref' => 'HTTP Referrer', 'ip' => 'Client IP Address', 'ua' => 'Client User Agent' ) as $k => $v ) {
+					$checked = checked( in_array( $k, $this->options['also_record'] ), true, false );
+					echo "<label><input type='checkbox' name='also_record[]' value='$k' $checked /> $v</label><br/>";
+				}
+				?></td>
+		</tr>
+		<tr>
+			<th scope="row">Other options</th>
+			<td>
+				<label><input type='checkbox' name='ignore_bots' <?php checked( $this->options['ignore_bots'] ); ?> /> Ignore visits from robots</label><br/>
+				<label><input type='checkbox' name='only_w_ref' <?php checked( $this->options['only_w_ref'] ); ?> /> Ignore visits which don't have an HTTP Referrer</label>
+			</td>
+		</tr>
 	</tbody></table>
 	<p class="submit"><input class="button-primary" type="submit" name="submit" value="Update settings" /></p>
 	</form>
@@ -186,7 +202,13 @@ class Log_404 {
 		global $wpdb;
 		
 		define( 'DONOTCACHEPAGE', true );		// WP Super Cache and W3 Total Cache recognise this
-		
+
+		if ( $this->options['ignore_bots'] && !empty( $_SERVER['HTTP_USER_AGENT'] ) && preg_match( '/(bot|spider)/', $_SERVER['HTTP_USER_AGENT'] ) )
+			return;
+
+		if ( $this->options['only_w_ref'] && empty($_SERVER['HTTP_REFERER'] ) )
+			return;
+			
 		$data = array( 
 			'date' => current_time('mysql'),
 			'url' => $_SERVER['REQUEST_URI']
