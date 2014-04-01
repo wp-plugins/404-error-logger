@@ -3,7 +3,7 @@
 Plugin Name: 404 Error Logger
 Plugin URI: http://rayofsolaris.net/code/404-error-logger-for-wordpress
 Description: A simple plugin to log 404 (Page Not Found) errors on your site.
-Version: 0.2
+Version: 0.2.1
 Author: Samir Shah
 Author URI: http://rayofsolaris.net/
 License: GPL2
@@ -128,7 +128,7 @@ class Log_404 {
 	<?php $this->list_table->display(); ?>
 	</form>
 	<script>
-	jQuery(document).ready(function($){
+	jQuery(function($){
 		$("#doaction, #doaction2").click( function(e){
 			if( $(this).parent().find("select").val() == "-1" ) {
 				e.preventDefault();
@@ -149,6 +149,7 @@ class Log_404 {
 	
 	private function manage_options(){
 		if( isset( $_POST['submit'] ) ) {
+			check_admin_referer( '404-logger-options' );
 			$this->options['also_record'] = empty( $_POST['also_record'] ) ? array() : (array) $_POST['also_record'];
 			$this->options['max_entries'] = abs( intval( $_POST['max_entries'] ) );
 			$this->options['ignore_bots'] = isset( $_POST['ignore_bots'] );
@@ -182,10 +183,11 @@ class Log_404 {
 			</td>
 		</tr>
 	</tbody></table>
+	<?php wp_nonce_field( '404-logger-options' ); ?>
 	<p class="submit"><input class="button-primary" type="submit" name="submit" value="Update settings" /></p>
 	</form>
 	<script>
-	jQuery(document).ready(function($){
+	jQuery(function($){
 		$("#log-404-settings :input").change( function(){
 			$("#message").slideUp();
 		});
@@ -229,10 +231,11 @@ class Log_404 {
 		$wpdb->insert( $this->table, $data );
 		
 		// pop old entry if we exceeded the limit
-		$max = $this->options['max_entries'];
+		$max = intval( $this->options['max_entries'] );
 		$cutoff = $wpdb->get_var( "SELECT id FROM $this->table ORDER BY id DESC LIMIT $max,1" );
-		if( $cutoff )
-			$wpdb->query( "DELETE FROM $this->table WHERE id <= $cutoff" );
+		if( $cutoff ) {
+			$wpdb->delete( $this->table, array( 'id' => intval( $cutoff ) ), array( '%d' ) );
+		}
 	}
 }
 

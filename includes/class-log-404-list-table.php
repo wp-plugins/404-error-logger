@@ -60,9 +60,11 @@ class Log_404_List_Table extends WP_List_Table {
 	
     private function bulk_delete() {
 		global $wpdb;
-		if( empty( $_REQUEST['delete_404'] ) )
+		if( empty( $_REQUEST['delete_404'] ) ) {
 			return;
-		$item_ids = (array) $_REQUEST['delete_404'];
+		}
+
+		$item_ids = array_map( 'intval', (array) $_REQUEST['delete_404'] );
 		$item_ids = implode(',', $item_ids);
 		return $wpdb->query( "DELETE FROM $this->log_404_table WHERE id IN ($item_ids)" );
     }
