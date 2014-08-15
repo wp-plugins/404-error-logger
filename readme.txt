@@ -1,8 +1,8 @@
 === 404 Error Logger ===
 Contributors: solarissmoke
 Tags: error, log, 404
-Requires at least: 3.5
-Tested up to: 3.9
+Requires at least: 3.6
+Tested up to: 4.0
 Stable tag: trunk
 
 Logs 404 (Page Not Found) errors on your WordPress site.
@@ -27,6 +27,10 @@ The plugin has been tested with the following caching plugins, and should work e
 I have not tested it with other caching plugins, and there is a high chance that it **will not work** with many of them. Most of them will cache the response so that it cannot be logged.
 
 == Changelog ==
+
+= 0.3 =
+* Fix the database table to accommodate a large number of entries.
+* Allow exporting of data to CSV.
 
 = 0.2.1 =
 * Add CSRF validation to settings page, and use built-in database methods where possible.

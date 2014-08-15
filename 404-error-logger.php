@@ -3,7 +3,7 @@
 Plugin Name: 404 Error Logger
 Plugin URI: http://rayofsolaris.net/code/404-error-logger-for-wordpress
 Description: A simple plugin to log 404 (Page Not Found) errors on your site.
-Version: 0.2.1
+Version: 0.3
 Author: Samir Shah
 Author URI: http://rayofsolaris.net/
 License: GPL2
@@ -13,7 +13,7 @@ if( ! defined( 'ABSPATH' ) )
 	exit;
 
 class Log_404 {
-	const db_version = 2;
+	const db_version = 3;
 	const opt = '404_error_logger_options';
 	private $options;
 	private $table;
@@ -52,7 +52,7 @@ class Log_404 {
 	private function install_table() {
 		// remember, two spaces after PRIMARY KEY otherwise WP borks
 		$sql = "CREATE TABLE $this->table (
-			id SMALLINT NOT NULL AUTO_INCREMENT,
+			id BIGINT NOT NULL AUTO_INCREMENT,
 			date DATETIME NOT NULL,
 			url VARCHAR(512) NOT NULL,
 			ref VARCHAR(512) NOT NULL default '', 
@@ -67,6 +67,10 @@ class Log_404 {
 	
 	function settings_menu() {
 		add_submenu_page('tools.php', '404 Error Log', '404 Error Log', 'manage_options', '404_error_log', array( $this, 'settings_page') );
+		// Register a page for CSV
+		add_submenu_page('tools.php', '404 Error Log CSV', '404 Error Log CSV', 'manage_options', '404_error_log_csv', array( $this, 'csv') );
+		// ...But hide it
+		remove_submenu_page('tools.php', '404_error_log_csv');
 	}
 	
 	function load_table(){
@@ -74,6 +78,34 @@ class Log_404 {
 		if( get_current_screen()->id == 'tools_page_404_error_log' && empty( $_GET['view'] ) ) {
 			require_once( dirname( __FILE__ ) . '/includes/class-log-404-list-table.php' );
 			$this->list_table = new Log_404_List_Table( $this->options['also_record'] );
+		}
+	}
+	
+	function csv() {
+		global $wpdb;
+		if( isset( $_GET['csv'] ) && isset( $_GET['noheader'] ) && check_admin_referer('404_error_log_csv') ) {
+			$orderby = ( isset( $_GET['orderby'] ) && in_array( $_GET['orderby'], array( 'date', 'url', 'ua', 'ref', 'ip' ) ) )
+						? $_GET['orderby'] : 'id';
+			$order = ( isset( $_GET['order'] ) && strtolower( $_GET['order'] == 'asc' ) ) 
+						? 'ASC' : 'DESC';
+
+			$rows = $wpdb->get_results( "SELECT date, url, ref, ip, ua FROM $this->table ORDER BY $orderby $order", ARRAY_N );
+			$fp = fopen('php://output', 'w');
+			$headers = array('Date', 'URL', 'Referrer', 'IP Address', 'User Agent');
+			if($rows && $fp){
+				header('Content-Type: text/csv');
+				header('Content-Disposition: attachment; filename="404_error_log.csv"');
+				header('Cache-Control: private, max-age=0');
+				fputcsv($fp, $headers);
+				foreach($rows as $row){
+					fputcsv($fp, $row);
+				}
+			}
+			else { 
+				header('Content-Type: text/plain');
+				echo 'An error occurred when generating the CSV.';
+			}
+			exit;
 		}
 	}
 	
@@ -127,6 +159,8 @@ class Log_404 {
 	<?php $this->list_table->search_box( 'Search log', 'log' ); ?>
 	<?php $this->list_table->display(); ?>
 	</form>
+	
+	<p style="text-align: right"><a class="button button-primary" target="_blank" href="<?php echo wp_nonce_url( menu_page_url('404_error_log_csv', false), '404_error_log_csv' ) . '&amp;csv=1&amp;noheader=true&amp;orderby=' . ( empty($_GET['orderby']) ? '' : $_GET['orderby'] ) . '&amp;order=' . ( empty($_GET['order']) ? '' : $_GET['order'] ); ?>">Download this table as CSV</a></p>
 	<script>
 	jQuery(function($){
 		$("#doaction, #doaction2").click( function(e){
