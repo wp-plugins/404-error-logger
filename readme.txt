@@ -2,7 +2,7 @@
 Contributors: solarissmoke
 Tags: error, log, 404
 Requires at least: 3.6
-Tested up to: 4.0
+Tested up to: 4.1
 Stable tag: trunk
 
 Logs 404 (Page Not Found) errors on your WordPress site.
@@ -27,6 +27,10 @@ The plugin has been tested with the following caching plugins, and should work e
 I have not tested it with other caching plugins, and there is a high chance that it **will not work** with many of them. Most of them will cache the response so that it cannot be logged.
 
 == Changelog ==
+
+= 0.4 =
+* Add option to delete all log entries.
+* Link IPs to DuckDuckGo's !whois query
 
 = 0.3 =
 * Fix the database table to accommodate a large number of entries.

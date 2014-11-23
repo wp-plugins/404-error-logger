@@ -3,7 +3,7 @@
 Plugin Name: 404 Error Logger
 Plugin URI: http://rayofsolaris.net/code/404-error-logger-for-wordpress
 Description: A simple plugin to log 404 (Page Not Found) errors on your site.
-Version: 0.3
+Version: 0.4
 Author: Samir Shah
 Author URI: http://rayofsolaris.net/
 License: GPL2
@@ -138,10 +138,18 @@ class Log_404 {
 		<p><strong>Other caching plugins may cache responses to requests for pages that don't exist</strong>, in which case this plugin will not be able to intercept the requests and log them.</p>
 		</div>
 		<?php endif;
-		if( isset( $_GET['view'] ) && $_GET['view'] == 'options' )
+		if( isset( $_GET['view'] ) && $_GET['view'] == 'options' ) {
 			$this->manage_options();
-		else
+		}
+		else {
+			if( isset( $_GET['delete_all'] ) ) {
+				check_admin_referer( '404_error_log_delete' );
+				$this->delete_all_entries();
+				wp_redirect( menu_page_url('404_error_log', false) );
+				exit;
+			}
 			$this->show_log();
+		}
 		// div is closed in show_log()
 	}
 	
@@ -160,7 +168,8 @@ class Log_404 {
 	<?php $this->list_table->display(); ?>
 	</form>
 	
-	<p style="text-align: right"><a class="button button-primary" target="_blank" href="<?php echo wp_nonce_url( menu_page_url('404_error_log_csv', false), '404_error_log_csv' ) . '&amp;csv=1&amp;noheader=true&amp;orderby=' . ( empty($_GET['orderby']) ? '' : $_GET['orderby'] ) . '&amp;order=' . ( empty($_GET['order']) ? '' : $_GET['order'] ); ?>">Download this table as CSV</a></p>
+	<p style="float: left"><a style="color: #a00" id="log-delete-all" href="<?php echo wp_nonce_url( menu_page_url('404_error_log', false), '404_error_log_delete' ) . '&amp;delete_all=1&amp;noheader=true';?>">Delete all log entries</a></p>
+	<p style="text-align: right"><a class="button button-primary" href="<?php echo wp_nonce_url( menu_page_url('404_error_log_csv', false), '404_error_log_csv' ) . '&amp;csv=1&amp;noheader=true&amp;orderby=' . ( empty($_GET['orderby']) ? '' : $_GET['orderby'] ) . '&amp;order=' . ( empty($_GET['order']) ? '' : $_GET['order'] ); ?>">Download this table as CSV</a></p>
 	<script>
 	jQuery(function($){
 		$("#doaction, #doaction2").click( function(e){
@@ -175,6 +184,9 @@ class Log_404 {
 		});
 		
 		$("#url-hide").parent().hide();	// can't hide this
+		$("#log-delete-all").click(function(e){
+			return window.confirm("Are you sure you want to delete all log entries?");
+		});
 	});
 	</script>
 	</div>
@@ -270,6 +282,11 @@ class Log_404 {
 		if( $cutoff ) {
 			$wpdb->delete( $this->table, array( 'id' => intval( $cutoff ) ), array( '%d' ) );
 		}
+	}
+
+	private function delete_all_entries() {
+		global $wpdb;
+		$wpdb->query("TRUNCATE TABLE $this->table;");
 	}
 }
 

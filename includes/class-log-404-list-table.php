@@ -53,6 +53,11 @@ class Log_404_List_Table extends WP_List_Table {
 		$url = esc_html( $item->url );	// don't use esc_url because it could be an invalid one that 404d
 		return "<a href='$url' class='log_404_url' target='_blank'>$url</a>";
     }
+
+	protected function column_ip( $item ){
+		$ip = esc_html( $item->ip );
+		return "<a href='https://duckduckgo.com/?q=%21whois%20$ip' target='_blank' title='Information about this IP address'>$ip</a>";
+    }
 	
 	protected function column_cb( $item ){
 		return "<input type='checkbox' name='delete_404[]' value='$item->id' />";
