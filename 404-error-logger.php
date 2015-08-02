@@ -3,7 +3,7 @@
 Plugin Name: 404 Error Logger
 Plugin URI: http://rayofsolaris.net/code/404-error-logger-for-wordpress
 Description: A simple plugin to log 404 (Page Not Found) errors on your site.
-Version: 0.4
+Version: 1.0
 Author: Samir Shah
 Author URI: http://rayofsolaris.net/
 License: GPL2
@@ -18,17 +18,17 @@ class Log_404 {
 	private $options;
 	private $table;
 	private $list_table;
-	
+
 	function __construct() {
 		// load options
 		$this->options = get_option( self::opt, array() );
 		$this->table = $GLOBALS['wpdb']->prefix . '404_log';
-		
+
 		if( !isset( $this->options['db_version'] ) || $this->options['db_version'] < self::db_version ) {
 			// upgrade placeholder
 			$this->install_table();
-			$defaults = array( 
-				'max_entries' => 500, 
+			$defaults = array(
+				'max_entries' => 500,
 				'also_record' => array( 'ip', 'ua', 'ref' ),
 				'ignore_bots' => false,
 				'only_w_ref' => false
@@ -36,26 +36,27 @@ class Log_404 {
 			foreach( $defaults as $k => $v )
 				if( !isset( $this->options[$k] ) )
 					$this->options[$k] = $v;
-				
+
 			$this->options['db_version'] = self::db_version;
 			update_option( self::opt, $this->options );
 		}
 
 		add_action( 'template_redirect', array( $this, 'log_404s' ) );
-		
+
 		if( is_admin() ) {
 			add_action( 'admin_menu', array( $this, 'settings_menu' ) );
 			add_action( 'admin_head', array( $this, 'load_table' ) );
+			add_action( 'wp_dashboard_setup', array( $this, 'load_dashboard_widget' ) );
 		}
 	}
-	
+
 	private function install_table() {
 		// remember, two spaces after PRIMARY KEY otherwise WP borks
 		$sql = "CREATE TABLE $this->table (
 			id BIGINT NOT NULL AUTO_INCREMENT,
 			date DATETIME NOT NULL,
 			url VARCHAR(512) NOT NULL,
-			ref VARCHAR(512) NOT NULL default '', 
+			ref VARCHAR(512) NOT NULL default '',
 			ip VARCHAR(40) NOT NULL default '',
 			ua VARCHAR(512) NOT NULL default '',
 			PRIMARY KEY  (id)
@@ -64,29 +65,54 @@ class Log_404 {
 		require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 		dbDelta($sql);
 	}
-	
-	function settings_menu() {
+
+	public function load_dashboard_widget() {
+		wp_add_dashboard_widget(
+                 '404_error_log_widget',
+                 'Latest 404 Errors',
+                 array($this, 'dashboard_widget')
+        );
+	}
+
+	public function dashboard_widget() {
+		global $wpdb;
+		$recent_errors = $wpdb->get_results("SELECT COUNT(url) as count, url, max(date) as latest FROM $this->table GROUP BY url ORDER BY id DESC LIMIT 10");
+		if($recent_errors) {
+			echo '<table class="striped widefat"><thead><tr><th>URL<th>Hits<th>Last hit</tr></thead><tbody>';
+			foreach($recent_errors as $error) {
+				$url = esc_html( $error->url );
+				echo '<tr><td><a href="' . $url . '">' . $url . '<td>' . esc_html( $error->count ) . '<td>' . $error->latest . '</tr>';
+			}
+			echo '</table>';
+			echo '<p>More details are available in the <a href="' . admin_url('tools.php?page=404_error_log') . '">error log</a>.</p>';
+		}
+		else {
+			echo '<p>No errors to report!</p>';
+		}
+	}
+
+	public function settings_menu() {
 		add_submenu_page('tools.php', '404 Error Log', '404 Error Log', 'manage_options', '404_error_log', array( $this, 'settings_page') );
 		// Register a page for CSV
 		add_submenu_page('tools.php', '404 Error Log CSV', '404 Error Log CSV', 'manage_options', '404_error_log_csv', array( $this, 'csv') );
 		// ...But hide it
 		remove_submenu_page('tools.php', '404_error_log_csv');
 	}
-	
-	function load_table(){
+
+	public function load_table(){
 		// need to load the list table early for WP to catch it
 		if( get_current_screen()->id == 'tools_page_404_error_log' && empty( $_GET['view'] ) ) {
 			require_once( dirname( __FILE__ ) . '/includes/class-log-404-list-table.php' );
 			$this->list_table = new Log_404_List_Table( $this->options['also_record'] );
 		}
 	}
-	
-	function csv() {
+
+	public function csv() {
 		global $wpdb;
 		if( isset( $_GET['csv'] ) && isset( $_GET['noheader'] ) && check_admin_referer('404_error_log_csv') ) {
 			$orderby = ( isset( $_GET['orderby'] ) && in_array( $_GET['orderby'], array( 'date', 'url', 'ua', 'ref', 'ip' ) ) )
 						? $_GET['orderby'] : 'id';
-			$order = ( isset( $_GET['order'] ) && strtolower( $_GET['order'] == 'asc' ) ) 
+			$order = ( isset( $_GET['order'] ) && strtolower( $_GET['order'] == 'asc' ) )
 						? 'ASC' : 'DESC';
 
 			$rows = $wpdb->get_results( "SELECT date, url, ref, ip, ua FROM $this->table ORDER BY $orderby $order", ARRAY_N );
@@ -101,14 +127,14 @@ class Log_404 {
 					fputcsv($fp, $row);
 				}
 			}
-			else { 
+			else {
 				header('Content-Type: text/plain');
 				echo 'An error occurred when generating the CSV.';
 			}
 			exit;
 		}
 	}
-	
+
 	function settings_page() {
 		?>
 		<style>
@@ -119,21 +145,20 @@ class Log_404 {
 		.wp-list-table .column-ip {width: 15%}
 		#the-list .column-ua, #the-list .column-ref {color: #777; font-size: 0.9em}
 		</style>
-		<?php screen_icon(); ?>
 		<div class="wrap">
-		<h2>404 Error Log <?php if ( !empty( $_POST['s'] ) ) echo '<span class="subtitle">Search results for &#8220;' . esc_attr( $_POST['s'] ) . '&#8221;</span>'; ?></h2>
+		<h1>404 Error Log <?php if ( !empty( $_POST['s'] ) ) echo '<span class="subtitle">Search results for &#8220;' . esc_attr( $_POST['s'] ) . '&#8221;</span>'; ?></h1>
 		<?php
 		if( ! get_option( 'permalink_structure' ) ) {
 			echo '<div class="error"><p><strong>You do not currently have pretty permalinks enabled on your site. This means that WordPress does not handle requests for pages that are not found on your site (your web server handles them directly), and so this plugin cannot log them. You need to be using pretty permalinks in order for this plugin to work.</strong></div>';
 			echo '</div>'; //wrap
 			return;
 		}
-		if( WP_CACHE ) :?>
+		if( WP_CACHE && !(defined('W3TC') || defined('WPCACHEHOME')) ) :?>
 		<div class="updated">
 		<p><strong style="color: #900">Warning:</strong> It seems that a caching/performance plugin is active on this site. This plugin has only been tested with the following caching plugins:</p>
 		<ul style="list-style: disc; margin-left: 2em">
 		<li>W3 Total Cache</li>
-		<li> WP Super Cache</li>
+		<li>WP Super Cache</li>
 		</ul>
 		<p><strong>Other caching plugins may cache responses to requests for pages that don't exist</strong>, in which case this plugin will not be able to intercept the requests and log them.</p>
 		</div>
@@ -152,12 +177,12 @@ class Log_404 {
 		}
 		// div is closed in show_log()
 	}
-	
+
 	private function subsubsub(){
 		$manage_options = isset( $_GET['view'] ) && $_GET['view'] == 'options';
 		echo '<ul class="subsubsub"><li><a ' . ( $manage_options ? '' : 'class="current"' ) . ' href="?page=404_error_log">View 404 log</a> | </li><li><a ' . ( $manage_options ? 'class="current"' : '' ) . ' href="?page=404_error_log&amp;view=options">Manage plugin settings</a></li></ul>';
 	}
-	
+
 	private function show_log(){
 		$this->list_table->prepare_items();
 		$this->subsubsub();
@@ -167,7 +192,7 @@ class Log_404 {
 	<?php $this->list_table->search_box( 'Search log', 'log' ); ?>
 	<?php $this->list_table->display(); ?>
 	</form>
-	
+
 	<p style="float: left"><a style="color: #a00" id="log-delete-all" href="<?php echo wp_nonce_url( menu_page_url('404_error_log', false), '404_error_log_delete' ) . '&amp;delete_all=1&amp;noheader=true';?>">Delete all log entries</a></p>
 	<p style="text-align: right"><a class="button button-primary" href="<?php echo wp_nonce_url( menu_page_url('404_error_log_csv', false), '404_error_log_csv' ) . '&amp;csv=1&amp;noheader=true&amp;orderby=' . ( empty($_GET['orderby']) ? '' : $_GET['orderby'] ) . '&amp;order=' . ( empty($_GET['order']) ? '' : $_GET['order'] ); ?>">Download this table as CSV</a></p>
 	<script>
@@ -182,7 +207,7 @@ class Log_404 {
 				alert("You did not select any items to delete!");
 			}
 		});
-		
+
 		$("#url-hide").parent().hide();	// can't hide this
 		$("#log-delete-all").click(function(e){
 			return window.confirm("Are you sure you want to delete all log entries?");
@@ -192,7 +217,7 @@ class Log_404 {
 	</div>
 <?php
 	}
-	
+
 	private function manage_options(){
 		if( isset( $_POST['submit'] ) ) {
 			check_admin_referer( '404-logger-options' );
@@ -242,13 +267,13 @@ class Log_404 {
 	</div>
 <?php
 	}
-	
+
 	function log_404s () {
 		if( !is_404() )
 			return;
-		
+
 		global $wpdb;
-		
+
 		define( 'DONOTCACHEPAGE', true );		// WP Super Cache and W3 Total Cache recognise this
 
 		if ( $this->options['ignore_bots'] && !empty( $_SERVER['HTTP_USER_AGENT'] ) && preg_match( '/(bot|spider)/', $_SERVER['HTTP_USER_AGENT'] ) )
@@ -256,26 +281,28 @@ class Log_404 {
 
 		if ( $this->options['only_w_ref'] && empty($_SERVER['HTTP_REFERER'] ) )
 			return;
-			
-		$data = array( 
+
+		$data = array(
 			'date' => current_time('mysql'),
 			'url' => $_SERVER['REQUEST_URI']
 		);
-		
+
 		if( in_array( 'ip', $this->options['also_record'] ) )
 			$data['ip'] = $_SERVER['REMOTE_ADDR'];
 		if( in_array( 'ref', $this->options['also_record'] ) && isset( $_SERVER['HTTP_REFERER'] ) )
 			$data['ref'] = $_SERVER['HTTP_REFERER'];
 		if( in_array( 'ua', $this->options['also_record'] ) && isset( $_SERVER['HTTP_USER_AGENT'] ) )
 			$data['ua'] = $_SERVER['HTTP_USER_AGENT'];
-		
+
 		// trim stuff
-		foreach( array( 'url', 'ref', 'ua' ) as $k )
-			if( isset( $data[$k] ) )
+		foreach( array( 'url', 'ref', 'ua' ) as $k ) {
+			if( isset( $data[$k] ) ) {
 				$data[$k] = substr( $data[$k], 0, 512 );
-		
+			}
+		}
+
 		$wpdb->insert( $this->table, $data );
-		
+
 		// pop old entry if we exceeded the limit
 		$max = intval( $this->options['max_entries'] );
 		$cutoff = $wpdb->get_var( "SELECT id FROM $this->table ORDER BY id DESC LIMIT $max,1" );

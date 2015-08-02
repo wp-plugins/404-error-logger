@@ -1,8 +1,9 @@
 === 404 Error Logger ===
 Contributors: solarissmoke
+Donate link: http://www.rayofsolaris.net/donate/
 Tags: error, log, 404
-Requires at least: 3.6
-Tested up to: 4.1
+Requires at least: 3.8
+Tested up to: 4.3
 Stable tag: trunk
 
 Logs 404 (Page Not Found) errors on your WordPress site.
@@ -13,7 +14,7 @@ Logs 404 (Page Not Found) errors on your WordPress site. This can be useful for 
 
 **IMPORTANT: This plugin will not work if you use a caching/performance plugin that caches 404 responses. Please check that this isn't the case before reporting a bug.**
 
-If you come across any bugs or have suggestions, please use the plugin support forums or contact me at [rayofsolaris.net](http://rayofsolaris.net). I can't fix it if I don't know it's broken!
+If you come across any bugs or have suggestions, please use the plugin support forums.
 
 == Frequently Asked Questions ==
 
@@ -27,6 +28,10 @@ The plugin has been tested with the following caching plugins, and should work e
 I have not tested it with other caching plugins, and there is a high chance that it **will not work** with many of them. Most of them will cache the response so that it cannot be logged.
 
 == Changelog ==
+
+= 1.0 =
+* Added a dashboard widget to show latest 404 errors
+* Minor compatibility tweaks for WP 4.3
 
 = 0.4 =
 * Add option to delete all log entries.
@@ -57,4 +62,3 @@ I have not tested it with other caching plugins, and there is a high chance that
 1. Upload the plugin folder to the `/wp-content/plugins/` directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
 3. The plugin settings can be accessed via the 'Tools' menu in the administration area, under '404 Error Logger'
- 
